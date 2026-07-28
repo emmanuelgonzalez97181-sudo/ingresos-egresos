@@ -1,0 +1,10 @@
+const fs = require('fs');
+const path = 'tikets.xls';
+const fd = fs.openSync(path, 'r');
+const buffer = Buffer.alloc(1000);
+fs.readSync(fd, buffer, 0, 1000, 0);
+fs.closeSync(fd);
+console.log("=== PRIMEROS 1000 BYTES COMO TEXTO ===");
+console.log(buffer.toString('utf-8'));
+console.log("=== PRIMEROS 50 BYTES COMO HEX ===");
+console.log(buffer.toString('hex', 0, 50));

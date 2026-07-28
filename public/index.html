@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conciliador & Control de Utilidades - Avyna</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app.css">
+</head>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="login-overlay">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="login-logo">💎</span>
+                <h1>Avyna POS</h1>
+                <p>Conciliador & Control de Utilidades</p>
+            </div>
+            <form id="login-form" onsubmit="event.preventDefault(); handleLogin();">
+                <div class="form-group">
+                    <label for="login-username">Usuario</label>
+                    <input type="text" id="login-username" required placeholder="Ingresa tu usuario" autocomplete="username" style="width: 100%; padding: 10px; box-sizing: border-box; margin-top: 4px;">
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password" style="width: 100%; padding: 10px; box-sizing: border-box; margin-top: 4px;">
+                </div>
+                <div id="login-error" class="login-error-msg" style="display: none; color: #ef4444; margin-top: 10px; font-size: 13px; text-align: center; background: rgba(239,68,68,0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.2);">
+                    Usuario o contraseña incorrectos.
+                </div>
+                <button type="submit" class="btn btn-primary login-btn" style="margin-top: 20px; width: 100%; padding: 10px;">
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" style="display: none;">
+        <!-- Barra Lateral -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-logo">💎</span>
+                <h2>Avyna POS</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <span class="icon">📊</span> Panel General
+                </button>
+                <button class="nav-btn" data-tab="cortes">
+                    <span class="icon">📝</span> Cortes Z
+                </button>
+                <button class="nav-btn" data-tab="cuentas">
+                    <span class="icon">🏦</span> Cuentas & Bancos
+                </button>
+                <button class="nav-btn" data-tab="reporte">
+                    <span class="icon">📈</span> Reporte Financiero
+                </button>
+                <button class="nav-btn" data-tab="historial">
+                    <span class="icon">📜</span> Historial
+                </button>
+                <button class="nav-btn" data-tab="personal-socios">
+                    <span class="icon">👥</span> Personal & Socios
+                </button>
+                <button class="nav-btn" data-tab="bitacora" id="nav-btn-bitacora" style="display: none;">
+                    <span class="icon">📋</span> Bitácora
+                </button>
+            </nav>
+
+
+            <div class="account-summary">
+                <h3>Saldos Reales</h3>
+                <div id="sidebar-accounts-list">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- Perfil de Usuario y Cerrar Sesión -->
+            <div class="user-profile-section" style="margin-top: auto; padding: 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;">
+                <div class="user-info" style="display: flex; align-items: center; gap: 10px;">
+                    <span class="user-avatar" style="font-size: 24px;">👤</span>
+                    <div class="user-details" style="display: flex; flex-direction: column; overflow: hidden;">
+                        <span id="user-display-name" style="font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Cargando...</span>
+                        <span id="user-display-role" style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rol</span>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="btn btn-secondary btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; font-size: 12px;">
+                    <span>🚪</span> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Contenedor Principal -->
+        <main class="main-content">
+            <!-- TAB: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-pane active">
+                <header class="content-header">
+                    <h1>Resumen Financiero Real</h1>
+                    <p>Monitoreo de saldos reales conciliados y utilidades de la empresa</p>
+                </header>
+
+                <div class="metrics-grid">
+                    <div class="metric-card gold">
+                        <h3>Saldo Total Real</h3>
+                        <p class="value" id="dash-total-real">$0.00</p>
+                        <span class="subtext">Suma de efectivo y cuentas bancarias conciliadas</span>
+                    </div>
+                    <div class="metric-card emerald">
+                        <h3>Cortes Conciliados</h3>
+                        <p class="value" id="dash-cortes-conciliados">0</p>
+                        <span class="subtext">Cortes Z validados e ingresados a cuentas</span>
+                    </div>
+                    <div class="metric-card amber">
+                        <h3>Cortes Pendientes</h3>
+                        <p class="value" id="dash-cortes-pendientes">0</p>
+                        <span class="subtext">Cortes teóricos en MyBusiness sin conciliar</span>
+                    </div>
+                </div>
+                <div class="split-view">
+                    <!-- Movimientos manuales -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Registrar Gasto o Ingreso Externo</h2>
+                            <span class="subtitle">Fuera de MyBusiness POS</span>
+                        </div>
+                        <form id="manual-move-form" class="modern-form">
+                            <div class="form-group">
+                                <label for="move-concept">Concepto del Movimiento</label>
+                                <input type="text" id="move-concept" placeholder="Ej. Pago de Renta, Flete, Luz" required>
+                            </div>
+                            <div class="form-row" style="grid-template-columns: 1.2fr 1fr 1.2fr;">
+                                <div class="form-group">
+                                    <label for="move-type">Tipo</label>
+                                    <select id="move-type" style="width: 100%;">
+                                        <option value="E">Egreso (Salida de dinero)</option>
+                                        <option value="I">Ingreso (Entrada de dinero)</option>
+                                        <option value="T">Traspaso (Entre cuentas)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="move-amount">Importe ($)</label>
+                                    <input type="number" id="move-amount" step="0.01" min="0.01" placeholder="0.00" required style="width: 100%;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="move-date">Fecha de Operación</label>
+                                    <input type="date" id="move-date" required style="width: 100%;">
+                                </div>
+                            </div>
+                            <div class="form-group" id="group-move-account">
+                                <label for="move-account">Cuenta Destino/Origen</label>
+                                <select id="move-account">
+                                    <!-- Dinámico -->
+                                </select>
+                            </div>
+                            <div class="form-row" id="group-transfer-accounts" style="display: none;">
+                                <div class="form-group">
+                                    <label for="move-account-from">Cuenta Origen (Sale)</label>
+                                    <select id="move-account-from">
+                                        <!-- Dinámico -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="move-account-to">Cuenta Destino (Entra)</label>
+                                    <select id="move-account-to">
+                                        <!-- Dinámico -->
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Registrar Movimiento</button>
+                        </form>
+                    </div>
+
+                    <!-- Lista de movimientos manuales registrados -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Últimos Movimientos Externos</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="modern-table">
+                               <thead>
+                                   <tr>
+                                       <th>Concepto</th>
+                                       <th>Cuenta</th>
+                                       <th>Tipo</th>
+                                       <th>Importe</th>
+                                   </tr>
+                               </thead>
+                               <tbody id="manual-moves-table-body">
+                                   <!-- Dinámico -->
+                               </tbody>
+                            </table>
+                        </div>
+                </div>
+
+                <!-- Deudas de Vendedores -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2>Deudas de Vendedores</h2>
+                        <span class="subtitle">Ajustes de cortes pendientes por cobrar</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Corte Z</th>
+                                    <th>Vendedor</th>
+                                    <th>Importe Deuda</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vendor-debts-table-body">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: CORTES Z -->
+            <section id="tab-cortes" class="tab-pane">
+                <header class="content-header">
+                    <h1>Historial de Cortes Z</h1>
+                    <p>Selecciona un corte para auditar utilidades y conciliar ingresos</p>
+                </header>
+
+                <div class="cortes-layout">
+                    <!-- Lista de Cortes -->
+                    <div class="cortes-list-card card">
+                        <div class="card-header">
+                            <h2>Cortes Disponibles</h2>
+                        </div>
+                        <div class="search-bar" style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="corte-search-input" placeholder="Buscar por número..." style="flex: 1;">
+                            <select id="corte-status-filter" style="width: 140px; height: 42px; font-size: 13px; padding: 4px 8px;">
+                                <option value="all">Todos</option>
+                                <option value="pending" selected>Pendientes</option>
+                                <option value="reconciled">Conciliados</option>
+                                <option value="modified">Modificados</option>
+                            </select>
+                        </div>
+                        <div class="list-container" id="cortes-list-container">
+                            <!-- Dinámico -->
+                        </div>
+                        <div class="pagination-controls" id="cortes-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-top: 1px solid var(--border);">
+                            <button class="btn btn-secondary btn-sm" id="btn-prev-page" style="padding: 4px 8px; font-size: 12px;">◀ Ant.</button>
+                            <span id="page-indicator" style="font-size: 12px; font-weight: 600;">Pág. 1 de 1</span>
+                            <button class="btn btn-secondary btn-sm" id="btn-next-page" style="padding: 4px 8px; font-size: 12px;">Sig. ▶</button>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Detalle y Conciliación -->
+                    <div class="corte-detail-container" id="corte-detail-container">
+                        <div class="empty-state">
+                            <span class="icon">👈</span>
+                            <h3>Selecciona un corte de la lista para ver el desglose</h3>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: CUENTAS -->
+            <section id="tab-cuentas" class="tab-pane">
+                <header class="content-header">
+                    <h1>Cuentas de la Empresa</h1>
+                    <p>Saldos de efectivo y bancos conciliados</p>
+                </header>
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
+                        <h2 style="margin: 0;">Saldos Reales Disponibles</h2>
+                        <button class="btn btn-emerald btn-sm" onclick="openAddAccountModal()" style="padding: 6px 12px; font-size: 13px;">+ Agregar Cuenta</button>
+                    </div>
+                    <div class="accounts-detail-list" id="accounts-detail-list">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+            </section>
+ 
+             <!-- TAB: REPORTE -->
+             <section id="tab-reporte" class="tab-pane">
+                 <header class="content-header">
+                     <h1>Reporte Financiero de Ingresos & Egresos</h1>
+                     <p>Consulta los ingresos reales conciliados y gastos en cualquier rango de tiempo.</p>
+                 </header>
+                 
+                 <div class="card" style="max-width: 800px; margin: 0 auto;">
+                     <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+                         <h2 style="font-size: 16px; margin: 0 0 10px 0;">Filtro por Rango de Fechas</h2>
+                         <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                             <div style="display: flex; flex-direction: column; gap: 4px;">
+                                 <span style="font-size: 11px; color: var(--text-muted);">Desde:</span>
+                                 <input type="date" id="report-date-start" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px;">
+                             </div>
+                             <div style="display: flex; flex-direction: column; gap: 4px;">
+                                 <span style="font-size: 11px; color: var(--text-muted);">Hasta:</span>
+                                 <input type="date" id="report-date-end" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px;">
+                             </div>
+                             <div style="display: flex; flex-direction: column; gap: 4px;">
+                                 <span style="font-size: 11px; color: var(--text-muted);">Cortes a Incluir:</span>
+                                 <select id="report-cortes-filter" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px; height: 37px; box-sizing: border-box;">
+                                     <option value="conciliados">Solo Cortes Conciliados</option>
+                                     <option value="todos" selected>Todos los Cortes (Conciliados + Pendientes)</option>
+                                 </select>
+                             </div>
+                             <button type="button" class="btn btn-emerald" onclick="fetchReporteMensual()" style="padding: 8px 16px; height: 37px;">Filtrar Rango</button>
+                         </div>
+                     </div>
+ 
+                     <div class="report-content">
+                         <h3 id="monthly-report-title" style="margin-top: 0; font-size: 18px; color: var(--text);">Reporte Financiero</h3>
+                          <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; display: grid;">
+                              <div class="metric-card emerald" style="padding: 15px; min-height: auto; border-left: 4px solid var(--emerald);">
+                                  <h3 style="font-size: 11px; color: var(--text-muted); margin: 0;">1. Total de Ingresos</h3>
+                                  <p class="value" id="monthly-ingresos" style="font-size: 22px; margin: 8px 0; font-weight: 700;">$0.00</p>
+                                  <span class="subtext" style="font-size: 10px; color: var(--text-muted);">Ingresos cobrados</span>
+                              </div>
+                              <div class="metric-card gold" id="metric-card-costo" style="padding: 15px; min-height: auto; border-left: 4px solid #f59e0b; background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05)); border-color: rgba(245,158,11,0.2);">
+                                  <h3 style="font-size: 11px; color: #d97706; margin: 0;">2. Costo de Mercancía</h3>
+                                  <p class="value" id="monthly-costo" style="font-size: 22px; margin: 8px 0; color: #d97706; font-weight: 700;">$0.00</p>
+                                  <span class="subtext" style="font-size: 10px; color: #d97706;">Costo total partvta</span>
+                              </div>
+                              <div class="metric-card indigo" id="metric-card-bruta" style="padding: 15px; min-height: auto; border-left: 4px solid var(--indigo); background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(79,70,229,0.05)); border-color: rgba(79,70,229,0.2);">
+                                  <h3 style="font-size: 11px; color: var(--indigo); margin: 0;">3. Utilidad Bruta</h3>
+                                  <p class="value" id="monthly-bruta" style="font-size: 22px; margin: 8px 0; color: var(--indigo); font-weight: 700;">$0.00</p>
+                                  <span class="subtext" style="font-size: 10px; color: var(--indigo);">Ingresos menos Costo</span>
+                              </div>
+                              <div class="metric-card gold" style="padding: 15px; min-height: auto; border-left: 4px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border-color: rgba(239, 68, 68, 0.2);">
+                                  <h3 style="font-size: 11px; color: #ef4444; margin: 0;">4. Egresos Operativos</h3>
+                                  <p class="value" id="monthly-egresos" style="font-size: 22px; margin: 8px 0; color: #ef4444; font-weight: 700;">$0.00</p>
+                                  <span class="subtext" style="font-size: 10px; color: rgba(239, 68, 68, 0.8);">Retiros + Gastos manuales</span>
+                              </div>
+                              <div class="metric-card emerald" id="monthly-balance-card" style="padding: 15px; min-height: auto; border-left: 4px solid var(--emerald);">
+                                  <h3 style="font-size: 11px; color: var(--emerald); margin: 0;">5. Utilidad Neta (Ganancia)</h3>
+                                  <p class="value" id="monthly-balance" style="font-size: 22px; margin: 8px 0; font-weight: 700;">$0.00</p>
+                                  <span class="subtext" style="font-size: 10px; color: var(--text-muted);">Utilidad Bruta menos Egresos</span>
+                              </div>
+                              <div class="metric-card gold" style="padding: 15px; min-height: auto; border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(79,70,229,0.05)); border-color: rgba(79,70,229,0.2);">
+                                  <h3 style="font-size: 11px; color: var(--primary); margin: 0;">6. Saldo en Cuentas</h3>
+                                  <div id="report-accounts-list" style="margin-top: 8px; font-size: 12px; line-height: 1.5; color: var(--text);">
+                                      <!-- Dinámico: Cuentas y saldos -->
+                                  </div>
+                              </div>
+                          </div>
+  
+                          <div style="margin-top: 30px; border-top: 1px dashed var(--border); padding-top: 20px; display: flex; flex-direction: column; gap: 25px;">
+                              <!-- Tabla Cortes Incluidos (Ancho Completo) -->
+                              <div>
+                                  <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text);">Cortes de Caja Incluidos</h3>
+                                  <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                      <table class="modern-table" style="font-size: 12px;">
+                                          <thead>
+                                              <tr>
+                                                  <th>Corte Z</th>
+                                                  <th>Fecha</th>
+                                                  <th>Caja</th>
+                                                  <th>Ingresos</th>
+                                                  <th>Costo</th>
+                                                  <th>Retiros/Egresos</th>
+                                                  <th>Utilidad Neta</th>
+                                              </tr>
+                                          </thead>
+                                          <tbody id="rep-cortes-body">
+                                              <!-- Dinámico -->
+                                          </tbody>
+                                      </table>
+                                  </div>
+                              </div>
+                              
+                              <!-- Medios de Pago y Egresos en 2 Columnas abajo -->
+                              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                                  <div>
+                                      <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text);">Ingresos por Medio de Pago</h3>
+                                      <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+                                          <table class="modern-table" style="font-size: 12px;">
+                                              <thead>
+                                                  <tr>
+                                                      <th>Medio de Pago</th>
+                                                      <th style="text-align: right;">Total Recibido</th>
+                                                  </tr>
+                                              </thead>
+                                              <tbody id="rep-medios-body">
+                                                  <!-- Dinámico -->
+                                              </tbody>
+                                          </table>
+                                      </div>
+                                  </div>
+                                  
+                                  <div>
+                                      <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text);">Desglose de Egresos / Gastos</h3>
+                                      <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+                                          <table class="modern-table" style="font-size: 12px;">
+                                              <thead>
+                                                  <tr>
+                                                      <th>Concepto / Gasto</th>
+                                                      <th style="text-align: right;">Total Retirado</th>
+                                                  </tr>
+                                              </thead>
+                                              <tbody id="rep-egresos-body">
+                                                  <!-- Dinámico -->
+                                              </tbody>
+                                          </table>
+                                      </div>
+                                  </div>
+                              </div>
+                              <!-- Botón de Imprimir Reporte -->
+                              <div style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border); padding-top: 20px;">
+                                  <button type="button" class="btn btn-emerald btn-print" onclick="window.print()" style="padding: 10px 24px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                                      🖨️ Imprimir Reporte Financiero
+                                  </button>
+                              </div>
+                          </div>
+                     </div>
+                 </div>
+             </section>
+
+             <!-- TAB: HISTORIAL -->
+             <section id="tab-historial" class="tab-pane">
+                 <header class="content-header">
+                     <h1>Historial de Operaciones</h1>
+                     <p>Consulte un listado unificado de todos los ingresos, egresos y traspasos reales de la empresa.</p>
+                 </header>
+
+                 <div class="card" style="margin-bottom: 20px;">
+                     <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <span style="font-size: 11px; color: var(--text-muted);">Desde:</span>
+                             <input type="date" id="hist-date-start" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px;">
+                         </div>
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <span style="font-size: 11px; color: var(--text-muted);">Hasta:</span>
+                             <input type="date" id="hist-date-end" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px;">
+                         </div>
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <span style="font-size: 11px; color: var(--text-muted);">Tipo de Movimiento:</span>
+                             <select id="hist-type-filter" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px; height: 37px; box-sizing: border-box;">
+                                 <option value="all" selected>Todos los Movimientos</option>
+                                 <option value="ingreso">Solo Ingresos</option>
+                                 <option value="egreso">Solo Egresos</option>
+                                 <option value="traspaso">Solo Traspasos</option>
+                             </select>
+                         </div>
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <span style="font-size: 11px; color: var(--text-muted);">Origen:</span>
+                             <select id="hist-source-filter" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px; height: 37px; box-sizing: border-box;">
+                                 <option value="all" selected>Todos los Orígenes</option>
+                                 <option value="mybusiness">Solo MyBusiness POS</option>
+                                 <option value="externo">Solo Externos / Manuales</option>
+                             </select>
+                         </div>
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <span style="font-size: 11px; color: var(--text-muted);">Cuenta:</span>
+                             <select id="hist-account-filter" style="padding: 8px 12px; font-size: 13px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 4px; height: 37px; box-sizing: border-box;">
+                                 <option value="all" selected>Todas las Cuentas</option>
+                             </select>
+                         </div>
+                         <button class="btn btn-emerald" onclick="fetchHistorial()" style="padding: 8px 16px; height: 37px;">Buscar Operaciones</button>
+                     </div>
+                 </div>
+
+                 <div class="card" style="padding: 10px;">
+                     <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                         <table class="modern-table">
+                             <thead>
+                                 <tr>
+                                     <th style="padding: 10px;">Fecha</th>
+                                     <th style="padding: 10px;">Origen</th>
+                                     <th style="padding: 10px;">Tipo</th>
+                                     <th style="padding: 10px;">Concepto</th>
+                                     <th style="padding: 10px;">Cuenta / Destino</th>
+                                     <th style="padding: 10px; text-align: right;">Importe</th>
+                                 </tr>
+                             </thead>
+                             <tbody id="historial-table-body">
+                                 <!-- Dinámico -->
+                             </tbody>
+                         </table>
+                     </div>
+                 </div>
+             </section>
+             
+             <!-- TAB: BITACORA (Solo Admin) -->
+             <section id="tab-bitacora" class="tab-pane">
+                 <header class="content-header">
+                     <h1>Bitácora de Auditoría</h1>
+                     <p>Historial completo de acciones y movimientos administrativos en el sistema.</p>
+                 </header>
+
+                 <div class="card" style="margin-bottom: 15px; padding: 15px;">
+                     <div style="display: flex; gap: 10px; align-items: center;">
+                         <span style="font-size: 14px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">🔍 Buscar:</span>
+                         <input type="text" id="bitacora-search-input" placeholder="Filtrar por número de corte (ej: #161), usuario o palabra clave..." style="flex: 1; padding: 10px 14px; font-size: 14px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; width: 100%;">
+                     </div>
+                 </div>
+
+                 <div class="card" style="padding: 10px;">
+                     <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                         <table class="modern-table">
+                             <thead>
+                                 <tr>
+                                     <th style="padding: 10px; width: 180px;">Fecha y Hora</th>
+                                     <th style="padding: 10px; width: 120px;">Usuario</th>
+                                     <th style="padding: 10px; width: 200px;">Acción</th>
+                                     <th style="padding: 10px;">Detalles del Cambio</th>
+                                 </tr>
+                             </thead>
+                             <tbody id="bitacora-table-body">
+                                 <!-- Dinámico -->
+                             </tbody>
+                         </table>
+                     </div>
+                 </div>
+             </section>
+
+             <!-- TAB: PERSONAL & SOCIOS -->
+             <section id="tab-personal-socios" class="tab-pane">
+                  <header class="content-header">
+                      <h1>Gestión de Personal & Socios</h1>
+                      <p>Administre el pago de nóminas, liquidación de comisiones y reparto de utilidades de los socios.</p>
+                  </header>
+                  
+                  <!-- Sub-tabs navigation -->
+                  <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                      <button class="btn btn-emerald subnav-btn active" onclick="switchSubTab('nomina')">📋 Nómina</button>
+                      <button class="btn btn-secondary subnav-btn" onclick="switchSubTab('comisiones')">💸 Comisiones</button>
+                      <button class="btn btn-secondary subnav-btn" onclick="switchSubTab('socios')" id="subnav-btn-socios-capital">👥 Socios & Capital</button>
+                      <button class="btn btn-secondary subnav-btn" onclick="switchSubTab('cobrar')">📈 Cuentas por Cobrar</button>
+                      <button class="btn btn-secondary subnav-btn" onclick="switchSubTab('pagar')">📉 Cuentas por Pagar</button>
+                      <button class="btn btn-secondary subnav-btn" onclick="switchSubTab('app-users')" id="subnav-btn-app-users" style="display: none;">👥 Usuarios App</button>
+                  </div>
+                  
+                  <!-- SUBTAB: NOMINA -->
+                  <div id="subtab-nomina" class="subtab-pane active">
+                      <div class="split-view">
+                          <!-- Formulario registrar nómina -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Registrar Pago de Nómina</h2>
+                                  <span class="subtitle">Egrese y documente el pago de sueldos</span>
+                              </div>
+                              <form id="payroll-form" class="modern-form" onsubmit="submitPayroll(event)">
+                                  <div class="form-group">
+                                      <label for="pay-employee">Nombre del Empleado</label>
+                                      <input type="text" id="pay-employee" placeholder="Ej. Juan Pérez" required>
+                                  </div>
+                                  <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                                      <div class="form-group">
+                                          <label for="pay-date-start">Periodo Inicio</label>
+                                          <input type="date" id="pay-date-start" required>
+                                      </div>
+                                      <div class="form-group">
+                                          <label for="pay-date-end">Periodo Fin</label>
+                                          <input type="date" id="pay-date-end" required>
+                                      </div>
+                                  </div>
+                                  <div class="form-row" style="grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 12px;">
+                                      <div class="form-group">
+                                          <label for="pay-amount">Importe de la Nómina ($)</label>
+                                          <input type="number" id="pay-amount" placeholder="0.00" step="0.01" required>
+                                      </div>
+                                      <div class="form-group">
+                                          <label for="pay-account">Cuenta de Pago</label>
+                                          <select id="pay-account" required style="width: 100%;">
+                                              <!-- Dinámico -->
+                                          </select>
+                                      </div>
+                                  </div>
+                                  <div class="form-group" style="margin-top: 12px;">
+                                      <label for="pay-date">Fecha de Pago</label>
+                                      <input type="date" id="pay-date" required>
+                                  </div>
+                                  <button type="submit" class="btn btn-emerald" style="width: 100%; margin-top: 15px;">Registrar Pago</button>
+                              </form>
+                          </div>
+                          
+                          <!-- Historial de nóminas -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Historial de Nóminas Pagadas</h2>
+                                  <span class="subtitle">Últimos pagos registrados en el sistema</span>
+                              </div>
+                              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                  <table class="modern-table" style="font-size: 13px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Fecha</th>
+                                              <th>Empleado</th>
+                                              <th>Periodo</th>
+                                              <th>Cuenta</th>
+                                              <th style="text-align: right;">Importe</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="payroll-table-body">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <!-- SUBTAB: COMISIONES -->
+                  <div id="subtab-comisiones" class="subtab-pane" style="display: none;">
+                      <div class="split-view">
+                          <!-- Listado de Cortes para liquidar -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Cortes Z con Comisiones Pendientes</h2>
+                                  <span class="subtitle">Seleccione un corte para liquidar sus comisiones</span>
+                              </div>
+                              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                  <table class="modern-table" style="font-size: 13px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Corte</th>
+                                              <th>Fecha</th>
+                                              <th>Estación</th>
+                                              <th>Cobrado</th>
+                                              <th>Acción</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="commissions-cuts-body">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                          
+                          <!-- Historial de comisiones pagadas -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Historial de Comisiones Liquidadas</h2>
+                                  <span class="subtitle">Registro histórico de pagos realizados</span>
+                              </div>
+                              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                  <table class="modern-table" style="font-size: 12px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Fecha Pago</th>
+                                              <th>Corte Z</th>
+                                              <th>Cobrador original</th>
+                                              <th>Beneficiario</th>
+                                              <th>%</th>
+                                              <th>Cuenta</th>
+                                              <th style="text-align: right;">Comisión</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="commissions-history-body">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <!-- SUBTAB: SOCIOS -->
+                  <div id="subtab-socios" class="subtab-pane" style="display: none;">
+                      <!-- Catálogo de Socios -->
+                      <div class="card" style="margin-bottom: 20px;">
+                          <div class="card-header">
+                              <h2>Catálogo de Socios & Participación</h2>
+                              <span class="subtitle">Estructura accionaria para reparto de utilidades</span>
+                          </div>
+                          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                              <form id="partner-form" class="modern-form" onsubmit="submitPartner(event)" style="padding-right: 15px; border-right: 1px dashed var(--border);">
+                                  <input type="hidden" id="partner-id">
+                                  <div class="form-group">
+                                      <label for="partner-name">Nombre del Socio</label>
+                                      <input type="text" id="partner-name" placeholder="Ej. Emmanuel" required>
+                                  </div>
+                                  <div class="form-group" style="margin-top: 10px;">
+                                      <label for="partner-percentage">Porcentaje de Participación (%)</label>
+                                      <input type="number" id="partner-percentage" placeholder="Ej. 60" min="0" max="100" step="0.1" required>
+                                  </div>
+                                  <button type="submit" class="btn btn-emerald" style="width: 100%; margin-top: 15px;">Guardar Socio</button>
+                              </form>
+                              <div>
+                                  <table class="modern-table" style="font-size: 13px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Nombre Socio</th>
+                                              <th>Participación (%)</th>
+                                              <th>Acciones</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="partners-table-body">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                      
+                      <div class="split-view">
+                          <!-- Formulario reparto de utilidades -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Reparto de Utilidades</h2>
+                                  <span class="subtitle">Dividir ganancias de un periodo específico</span>
+                              </div>
+                              <div class="modern-form">
+                                  <div class="form-row" style="grid-template-columns: 1.2fr 1.2fr 1fr; gap: 10px; align-items: flex-end;">
+                                      <div class="form-group">
+                                          <label>Desde</label>
+                                          <input type="date" id="dist-date-start">
+                                      </div>
+                                      <div class="form-group">
+                                          <label>Hasta</label>
+                                          <input type="date" id="dist-date-end">
+                                      </div>
+                                      <button class="btn btn-secondary" onclick="previewUtilityDistribution()" style="height: 37px;">Consultar</button>
+                                  </div>
+                                  
+                                  <div id="dist-utility-preview" style="margin-top: 15px; padding: 12px; background: var(--bg-input); border-radius: 4px; font-size: 14px; display: none;">
+                                      <!-- Dinámico previsualización de la utilidad del periodo -->
+                                  </div>
+                                  
+                                  <div id="dist-execution-section" style="display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                                      <div class="form-group">
+                                          <label for="dist-total-amount">Monto total a repartir ($)</label>
+                                          <input type="number" id="dist-total-amount" placeholder="0.00" step="0.01" oninput="calculateSocioDistributionShares()" style="padding: 8px;">
+                                      </div>
+                                      
+                                      <div id="dist-socios-shares-container" style="margin-top: 15px;">
+                                          <!-- Inputs dinámicos por socio con su sugerido, importe real a retirar y selector de cuenta -->
+                                      </div>
+                                      
+                                      <button class="btn btn-emerald" onclick="executeUtilityDistribution()" style="width: 100%; margin-top: 15px;">Confirmar y Ejecutar Reparto</button>
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <!-- Formulario Retiro Directo / Anticipo -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Retiro Libre de Socio</h2>
+                                  <span class="subtitle">Registrar anticipos o préstamos a socios</span>
+                              </div>
+                              <form id="partner-withdrawal-form" class="modern-form" onsubmit="submitPartnerWithdrawal(event)">
+                                  <div class="form-group">
+                                      <label for="with-partner">Seleccionar Socio</label>
+                                      <select id="with-partner" required style="width: 100%;">
+                                          <!-- Dinámico -->
+                                      </select>
+                                  </div>
+                                  <div class="form-row" style="grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 12px;">
+                                      <div class="form-group">
+                                          <label for="with-amount">Monto a Retirar ($)</label>
+                                          <input type="number" id="with-amount" placeholder="0.00" step="0.01" required>
+                                      </div>
+                                      <div class="form-group">
+                                          <label for="with-account">Cuenta Origen</label>
+                                          <select id="with-account" required style="width: 100%;">
+                                              <!-- Dinámico -->
+                                          </select>
+                                      </div>
+                                  </div>
+                                  <div class="form-group" style="margin-top: 12px;">
+                                      <label for="with-comments">Comentarios / Concepto</label>
+                                      <input type="text" id="with-comments" placeholder="Ej. Anticipo utilidades julio" required>
+                                  </div>
+                                  <button type="submit" class="btn btn-emerald" style="width: 100%; margin-top: 15px;">Confirmar Retiro</button>
+                              </form>
+                          </div>
+                      </div>
+                      
+                      <!-- Historial de Socios -->
+                      <div class="card" style="margin-top: 20px;">
+                          <div class="card-header">
+                              <h2>Historial de Movimientos de Socios</h2>
+                              <span class="subtitle">Auditoría completa de retiros y utilidades repartidas</span>
+                          </div>
+                          <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                              <table class="modern-table" style="font-size: 13px;">
+                                  <thead>
+                                      <tr>
+                                          <th>Fecha</th>
+                                          <th>Socio</th>
+                                          <th>Tipo</th>
+                                          <th>Cuenta Origen</th>
+                                          <th>Concepto / Comentarios</th>
+                                          <th style="text-align: right;">Importe</th>
+                                          <th style="text-align: center;">Acción</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody id="partner-moves-table-body">
+                                      <!-- Dinámico -->
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <!-- SUBTAB: CUENTAS POR COBRAR (VENDEDORES) -->
+                  <div id="subtab-cobrar" class="subtab-pane" style="display: none;">
+                      <div class="split-view" style="grid-template-columns: 1fr 2fr; gap: 20px; display: grid;">
+                          <!-- Resumen acumulado -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Resumen de Cuentas por Cobrar</h2>
+                                  <span class="subtitle">Saldos deudores acumulados por vendedor</span>
+                              </div>
+                              <div class="table-container">
+                                  <table class="modern-table" style="font-size: 13px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Vendedor</th>
+                                              <th style="text-align: right;">Total por Cobrar</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="cxr-summary-tbody">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                          
+                          <!-- Desglose de deudas -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Detalle de Documentos por Cobrar</h2>
+                                  <span class="subtitle">Lista completa de faltantes originados en cortes</span>
+                              </div>
+                              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                  <table class="modern-table" style="font-size: 12px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Fecha</th>
+                                              <th>Origen</th>
+                                              <th>Vendedor</th>
+                                              <th>Importe</th>
+                                              <th>Estado</th>
+                                              <th>Acción</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="cxr-detail-tbody">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- SUBTAB: CUENTAS POR PAGAR (EMPRESA) -->
+                  <div id="subtab-pagar" class="subtab-pane" style="display: none;">
+                      <div class="split-view" style="grid-template-columns: 1.2fr 1.8fr; gap: 20px; display: grid;">
+                          <!-- Formulario registrar CXP -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Registrar Cuenta por Pagar</h2>
+                                  <span class="subtitle">Ingresa créditos, préstamos de socios o deudas a proveedores</span>
+                              </div>
+                              <form id="cxp-form" class="modern-form" onsubmit="event.preventDefault(); submitAddCuentaPorPagar();">
+                                  <div class="form-group">
+                                      <label for="cxp-creditor">Acreedor (A quién se le debe)</label>
+                                      <input type="text" id="cxp-creditor" required placeholder="Ej. Banco Santander, Socio Emmanuel, Proveedor X">
+                                  </div>
+                                  <div class="form-group" style="margin-top: 10px;">
+                                      <label for="cxp-concept">Concepto / Comentario</label>
+                                      <input type="text" id="cxp-concept" required placeholder="Ej. Crédito empresarial, Préstamo de capital">
+                                  </div>
+                                  <div class="form-row" style="grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 10px; display: grid;">
+                                      <div class="form-group">
+                                          <label for="cxp-amount">Monto de la Deuda ($)</label>
+                                          <input type="number" id="cxp-amount" required step="0.01" placeholder="0.00">
+                                      </div>
+                                      <div class="form-group">
+                                          <label for="cxp-date">Fecha de Registro</label>
+                                          <input type="date" id="cxp-date" required>
+                                      </div>
+                                  </div>
+                                  <button type="submit" class="btn btn-emerald" style="width: 100%; margin-top: 15px;">Registrar Deuda</button>
+                              </form>
+                          </div>
+                          
+                          <!-- Tabla listado de CXP -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Historial de Cuentas por Pagar</h2>
+                                  <span class="subtitle">Créditos y préstamos pendientes o liquidados</span>
+                              </div>
+                              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                  <table class="modern-table" style="font-size: 13px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Fecha</th>
+                                              <th>Acreedor</th>
+                                              <th>Concepto</th>
+                                              <th>Importe</th>
+                                              <th>Estado</th>
+                                              <th>Acción</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="cxp-table-body">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- SUBTAB: USUARIOS DE LA APP (SOLO ADMIN) -->
+                  <div id="subtab-app-users" class="subtab-pane" style="display: none;">
+                      <div class="split-view" style="grid-template-columns: 1.2fr 1.8fr; gap: 20px; display: grid;">
+                          <!-- Formulario registrar/editar usuario -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2 id="app-user-form-title">Registrar Nuevo Usuario</h2>
+                                  <span class="subtitle">Agrega o modifica usuarios autorizados para esta app</span>
+                              </div>
+                              <form id="app-user-form" class="modern-form" onsubmit="event.preventDefault(); submitAddAppUser();">
+                                  <div class="form-group">
+                                      <label for="app-user-username">Usuario (Ingreso / Login)</label>
+                                      <input type="text" id="app-user-username" required placeholder="Ej. juanito123" style="width: 100%; box-sizing: border-box;">
+                                  </div>
+                                  <div class="form-group" style="margin-top: 10px;">
+                                      <label for="app-user-name">Nombre Completo</label>
+                                      <input type="text" id="app-user-name" required placeholder="Ej. Juan Pérez" style="width: 100%; box-sizing: border-box;">
+                                  </div>
+                                  <div class="form-group" style="margin-top: 10px;">
+                                      <label for="app-user-role">Rol / Perfil</label>
+                                      <select id="app-user-role" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); box-sizing: border-box;">
+                                          <option value="auxiliar">Auxiliar / Operador (Acceso Restringido)</option>
+                                          <option value="socio">Socio (Lectura, Reportes y Utilidades)</option>
+                                          <option value="admin">Administrador (Acceso Completo)</option>
+                                      </select>
+                                  </div>
+                                  <div class="form-group" style="margin-top: 10px;">
+                                      <label for="app-user-password" id="app-user-password-label">Contraseña</label>
+                                      <input type="password" id="app-user-password" required placeholder="Min. 4 caracteres" style="width: 100%; box-sizing: border-box;">
+                                      <span id="app-user-password-help" style="font-size: 11px; color: var(--text-muted); display: none; margin-top: 4px;">Deje en blanco para mantener la contraseña actual.</span>
+                                  </div>
+                                  <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                      <button type="submit" class="btn btn-emerald" style="flex: 1;" id="app-user-submit-btn">Registrar Usuario</button>
+                                      <button type="button" class="btn btn-secondary" style="display: none;" id="app-user-cancel-edit-btn" onclick="cancelEditAppUser()">Cancelar</button>
+                                  </div>
+                              </form>
+                          </div>
+                          
+                          <!-- Tabla listado de usuarios -->
+                          <div class="card">
+                              <div class="card-header">
+                                  <h2>Usuarios con Acceso</h2>
+                                  <span class="subtitle">Administra cuentas y perfiles de acceso</span>
+                              </div>
+                              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                  <table class="modern-table" style="font-size: 13px;">
+                                      <thead>
+                                          <tr>
+                                              <th>Usuario</th>
+                                              <th>Nombre</th>
+                                              <th>Rol</th>
+                                              <th style="text-align: right;">Acciones</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="app-users-table-body">
+                                          <!-- Dinámico -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </section>
+         </main>
+     </div>
+
+    <!-- Modal de Conciliación -->
+    <div class="modal-overlay" id="reconcile-modal">
+        <div class="modal-card" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2>Conciliar Ingresos del Corte</h2>
+                <button class="modal-close" onclick="closeReconcileModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px;">Direcciona los ingresos a tus cuentas bancarias/efectivo. Puedes ajustar los montos reales si hay diferencias.</p>
+                
+                <div id="reconcile-distribution-container" style="max-height: 250px; overflow-y: auto; padding-right: 12px; margin-bottom: 12px; box-sizing: border-box;">
+                    <!-- Dinámico -->
+                </div>
+                
+                <button type="button" class="btn" onclick="addCustomReconcileRow()" style="background-color: var(--border); color: var(--text); border: 1px solid #ccc; width: 100%; margin-bottom: 15px; font-size: 13px; padding: 6px; border-radius: 6px; cursor: pointer;">
+                    ➕ Agregar otro medio de pago (Corrección de captura)
+                </button>
+
+                <div class="reconcile-adjustments" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="font-size: 14px; margin: 0;">Ajuste por Faltante de Vendedores</h3>
+                        <span style="font-size: 12px; color: var(--red); font-weight: bold;" id="reconcile-unassigned-debt-label">Faltante por asignar: $0.00</span>
+                    </div>
+                    
+                    <div id="reconcile-debts-container" style="margin-bottom: 10px;">
+                        <!-- Faltantes dinámicos de vendedores -->
+                    </div>
+
+                    <button type="button" class="btn" onclick="addSellerDebtRow(0, '')" style="background-color: var(--border); color: var(--text); border: 1px solid #ccc; width: 100%; margin-bottom: 8px; font-size: 12px; padding: 5px; border-radius: 4px; cursor: pointer;">
+                        ➕ Agregar faltante de otro vendedor
+                    </button>
+                    
+                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 6px;">Cada monto ingresado se registrará automáticamente como deuda del vendedor correspondiente.</span>
+                </div>
+                <div class="reconcile-summary" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; justify-content: space-between;">
+                    <p><strong>Total Teórico:</strong> <span id="reconcile-total-corte">$0.00</span></p>
+                    <p><strong>Total Ajustado:</strong> <span id="reconcile-total-ajustado">$0.00</span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeReconcileModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitReconciliation()">Confirmar y Conciliar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Liquidar Comisiones -->
+    <div class="modal-overlay" id="reconcile-commissions-modal">
+        <div class="modal-card" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2>Liquidar Comisiones del Corte</h2>
+                <button class="modal-close" onclick="closeReconcileCommissionsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Establezca los porcentajes y asigne quién recibirá el pago de comisión correspondiente a este turno.</p>
+                <div class="table-container" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+                    <table class="modern-table" style="font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>Vendedor (MyB)</th>
+                                <th>Cobrado</th>
+                                <th>% Com.</th>
+                                <th>Destinatario (Pagar a)</th>
+                                <th style="text-align: right;">Comisión</th>
+                                <th>Cuenta Origen</th>
+                                <th style="width: 30px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="reconcile-commissions-tbody">
+                            <!-- Dinámico -->
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="addExtraCommissionRow()" style="margin-top: 12px; padding: 4px 8px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                    ➕ Agregar comisionado extra
+                </button>
+            </div>
+            <div class="modal-footer" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeReconcileCommissionsModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitReconcileCommissions()">Confirmar y Pagar Comisiones</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pago Deuda Vendedor -->
+    <div class="modal-overlay" id="pay-debt-modal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Registrar Pago de Deuda</h2>
+                <button class="modal-close" onclick="closePayDebtModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Selecciona la cuenta destino y el monto del pago que realiza el vendedor.</p>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label for="pay-debt-account">Cuenta Destino</label>
+                    <select id="pay-debt-account" style="width: 100%; padding: 8px 12px; font-size: 14px; margin-top: 4px;">
+                        <!-- Dinámico -->
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="pay-debt-amount-input">Monto a pagar ($)</label>
+                    <input type="number" id="pay-debt-amount-input" step="0.01" min="0.01" style="width: 100%; padding: 8px 12px; font-size: 14px; margin-top: 4px; box-sizing: border-box; text-align: right;">
+                    <span id="pay-debt-max-info" style="font-size: 12px; color: var(--text-muted); display: block; margin-top: 4px;">Saldo pendiente: $0.00</span>
+                </div>
+                <div style="margin-top: 15px; display: none;">
+                    <p><strong>Monto a pagar:</strong> <span id="pay-debt-amount" style="font-weight: 600; color: var(--emerald); font-size: 16px;">$0.00</span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePayDebtModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitPayDebt()">Confirmar Pago</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pago Cuenta por Pagar (CXP) -->
+    <div class="modal-overlay" id="pay-cxp-modal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Registrar Pago de Cuenta por Pagar</h2>
+                <button class="modal-close" onclick="closePayCXPModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Selecciona la cuenta de origen de donde saldrá el dinero para saldar esta deuda.</p>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label for="pay-cxp-account">Cuenta Origen (Pago)</label>
+                    <select id="pay-cxp-account" style="width: 100%; padding: 8px 12px; font-size: 14px; margin-top: 4px;">
+                        <!-- Dinámico -->
+                    </select>
+                </div>
+                <div style="margin-top: 15px;">
+                    <p><strong>Monto a pagar:</strong> <span id="pay-cxp-amount" style="font-weight: 600; color: var(--red); font-size: 16px;">$0.00</span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePayCXPModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitPayCXP()">Confirmar Pago</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Cuenta -->
+    <div class="modal-overlay" id="edit-account-modal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Editar Cuenta o Banco</h2>
+                <button class="modal-close" onclick="closeEditAccountModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-account-form" onsubmit="event.preventDefault(); submitEditAccount();">
+                    <input type="hidden" id="edit-account-id">
+                    <div class="form-group">
+                        <label for="edit-account-name">Nombre de la Cuenta o Banco</label>
+                        <input type="text" id="edit-account-name" required placeholder="Ej. BBVA Bancomer, Santander" style="width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label for="edit-account-number">Número de Cuenta o Referencia</label>
+                        <input type="text" id="edit-account-number" placeholder="Ej. Cuenta: 1234567890 (Opcional)" style="width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label for="edit-account-balance">Saldo Real Actual ($)</label>
+                        <input type="number" id="edit-account-balance" required step="0.01" placeholder="0.00" style="width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-top: 12px; display: flex; flex-direction: row; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="edit-account-active" style="width: auto; margin: 0; cursor: pointer;">
+                        <label for="edit-account-active" style="margin: 0; cursor: pointer;">Cuenta Activa (Disponible para movimientos)</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditAccountModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitEditAccount()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Cuenta -->
+    <div class="modal-overlay" id="add-account-modal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Registrar Nueva Cuenta o Banco</h2>
+                <button class="modal-close" onclick="closeAddAccountModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-account-form" onsubmit="event.preventDefault(); submitAddAccount();">
+                    <div class="form-group">
+                        <label for="add-account-name">Nombre de la Cuenta o Banco</label>
+                        <input type="text" id="add-account-name" required placeholder="Ej. Banco Azteca, Caja Fuerte" style="width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label for="add-account-number">Número de Cuenta o Referencia</label>
+                        <input type="text" id="add-account-number" placeholder="Ej. Cuenta: 5678 (Opcional)" style="width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label for="add-account-balance">Saldo Inicial ($)</label>
+                        <input type="number" id="add-account-balance" required step="0.01" value="0.00" style="width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box;">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddAccountModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitAddAccount()">Crear Cuenta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Movimiento Manual -->
+    <div class="modal-overlay" id="edit-move-modal">
+        <div class="modal-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Editar Movimiento Externo</h2>
+                <button class="modal-close" onclick="closeEditMoveModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-move-form" onsubmit="event.preventDefault(); submitEditMove();" class="modern-form">
+                    <input type="hidden" id="edit-move-id">
+                    
+                    <div class="form-group">
+                        <label for="edit-move-concept">Concepto del Movimiento</label>
+                        <input type="text" id="edit-move-concept" required placeholder="Ej. Pago de Renta, Luz" style="width: 100%; margin-top: 4px;">
+                    </div>
+                    
+                    <div class="form-row" style="grid-template-columns: 1.1fr 1fr 1.2fr; margin-top: 12px; display: grid; gap: 10px;">
+                        <div class="form-group">
+                            <label for="edit-move-type">Tipo</label>
+                            <select id="edit-move-type" style="width: 100%; margin-top: 4px;">
+                                <option value="E">Egreso</option>
+                                <option value="I">Ingreso</option>
+                                <option value="T">Traspaso</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-move-amount">Importe ($)</label>
+                            <input type="number" id="edit-move-amount" step="0.01" min="0.01" required style="width: 100%; margin-top: 4px;">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-move-date">Fecha</label>
+                            <input type="date" id="edit-move-date" required style="width: 100%; margin-top: 4px;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="group-edit-move-account" style="margin-top: 12px;">
+                        <label for="edit-move-account">Cuenta Destino/Origen</label>
+                        <select id="edit-move-account" style="width: 100%; margin-top: 4px;">
+                            <!-- Dinámico -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-row" id="group-edit-transfer-accounts" style="display: none; margin-top: 12px; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group">
+                            <label for="edit-move-account-from">Cuenta Origen (Sale)</label>
+                            <select id="edit-move-account-from" style="width: 100%; margin-top: 4px;">
+                                <!-- Dinámico -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-move-account-to">Cuenta Destino (Entra)</label>
+                            <select id="edit-move-account-to" style="width: 100%; margin-top: 4px;">
+                                <!-- Dinámico -->
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeEditMoveModal()">Cancelar</button>
+                <button class="btn btn-emerald" onclick="submitEditMove()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Confirmación Personalizado -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-card" style="max-width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: center; padding-bottom: 0; border-bottom: none;">
+                <h2 id="confirm-title" style="margin: 0; font-size: 20px;">Confirmar Acción</h2>
+                <button class="modal-close" onclick="closeConfirmModal()">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p id="confirm-message" style="margin: 0; color: var(--text-muted); font-size: 15px;">¿Estás seguro de continuar?</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center; gap: 15px; border-top: none; padding-top: 0;">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()" style="min-width: 120px;">Cancelar</button>
+                <button class="btn btn-emerald" id="confirm-submit-btn" style="min-width: 120px; background-color: var(--red); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=28"></script>
+</body>
+</html>
