@@ -927,6 +927,56 @@ SELECT
                 return res.status(404).json({ error: "Corte no encontrado" });
             }
 
+            const fechaStr = supaCorte.fecha ? supaCorte.fecha.split('T')[0] : '';
+
+            // Consultar ventas registradas en Supabase para la fecha de este corte
+            const { data: supaVentas } = await supabase
+                .from('ventas')
+                .select('*')
+                .gte('fecha', fechaStr + 'T00:00:00')
+                .lte('fecha', fechaStr + 'T23:59:59');
+
+            // Consultar catálogo de clientes de Supabase
+            const { data: supaClients } = await supabase
+                .from('clients')
+                .select('cliente, nombre');
+            const clientMap = {};
+            (supaClients || []).forEach(cl => clientMap[cl.cliente] = cl.nombre);
+
+            cobros = (supaVentas || []).map(v => {
+                const total = parseFloat(v.total || 0);
+                const costo = total * 0.7; // Costo estimado base si no hay desglose por partida
+                return {
+                    id_cobdet: v.venta,
+                    cobranza: v.venta,
+                    venta: v.venta,
+                    importe_cobrado: total,
+                    forma_pago: 'EFE',
+                    vendedor: v.vend || v.cajero || 'SUP',
+                    venta_total: total,
+                    venta_costo: costo,
+                    utilidad_venta: total - costo,
+                    es_abono: false,
+                    cliente_id: v.cliente || 'SYS',
+                    cliente_nombre: clientMap[v.cliente] || (v.cliente ? 'Cliente #' + v.cliente : 'Público General'),
+                    estacion: v.caja || supaCorte.caja || 'ESTACION01',
+                    ticket: v.venta
+                };
+            });
+
+            const ticketText = [
+                '========================================',
+                '        AVYNA URUAPAN POS',
+                '========================================',
+                `CORTE Z #${supaCorte.numero_corte}`,
+                `Fecha: ${fechaStr}`,
+                `Estacion: ${supaCorte.caja || 'ESTACION01'}`,
+                '----------------------------------------',
+                `TOTAL CORTE Z: $${(supaCorte.total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+                `VENTAS REGISTRADAS: ${cobros.length}`,
+                '========================================'
+            ].join('\n');
+
             corte = {
                 corte: 'z',
                 numeroCorte: supaCorte.numero_corte,
@@ -935,10 +985,10 @@ SELECT
                 totalEgresos: 0,
                 totalCaja: parseFloat(supaCorte.total || 0),
                 cajero: supaCorte.caja || 'ESTACION01',
-                usufecha: supaCorte.fecha ? supaCorte.fecha.split('T')[0] : '',
+                usufecha: fechaStr,
                 usuhora: '',
                 estacion: supaCorte.caja || 'ESTACION01',
-                cadenaSalida: ''
+                cadenaSalida: ticketText
             };
 
             const { data: supaFlujos } = await supabase
