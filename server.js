@@ -676,13 +676,42 @@ app.put('/api/movimientos-manuales/:id',  async (req, res) => {
 // API: Lista de Cortes Z
 app.get('/api/cortes',  async (req, res) => {
     try {
-        const query = `
-            SELECT corte, numeroCorte, totalVentas, totalIngresos, totalEgresos, totalCaja, cajero, CONVERT(varchar, usufecha, 126) as usufecha, usuhora, estacion
-            FROM corteszx 
-            WHERE corte = 'z'
-            ORDER BY numeroCorte DESC
-        `;
-        const cortes = runSqlcmdQuery(query);
+        let cortes = [];
+        try {
+            const query = `
+                SELECT corte, numeroCorte, totalVentas, totalIngresos, totalEgresos, totalCaja, cajero, CONVERT(varchar, usufecha, 126) as usufecha, usuhora, estacion
+                FROM corteszx 
+                WHERE corte = 'z'
+                ORDER BY numeroCorte DESC
+            `;
+            cortes = runSqlcmdQuery(query);
+        } catch (err) {
+            console.log("sqlcmd local no disponible, consultando Supabase...");
+        }
+
+        // Si sqlcmd no devolvió cortes (entorno Vercel o sin SQL Server local), consultamos Supabase corteszx
+        if (!cortes || cortes.length === 0) {
+            const { data: supaCortes, error } = await supabase
+                .from('corteszx')
+                .select('*')
+                .eq('tipo', 'z')
+                .order('numero_corte', { ascending: false });
+
+            if (!error && supaCortes) {
+                cortes = supaCortes.map(c => ({
+                    corte: c.tipo || 'z',
+                    numeroCorte: c.numero_corte,
+                    totalVentas: parseFloat(c.total || 0),
+                    totalIngresos: parseFloat(c.total || 0),
+                    totalEgresos: 0,
+                    totalCaja: parseFloat(c.total || 0),
+                    cajero: c.caja || 'ESTACION01',
+                    usufecha: c.fecha ? c.fecha.split('T')[0] : '',
+                    usuhora: '',
+                    estacion: c.caja
+                }));
+            }
+        }
         
         const db = await readLocalDbAsync();
         const response = cortes.map(c => {
@@ -702,8 +731,8 @@ app.get('/api/cortes',  async (req, res) => {
                 usufecha: c.usufecha,
                 usuhora: c.usuhora,
                 estacion: c.estacion,
-                conciliado: !!db.conciliaciones[key],
-                datosConciliados: db.conciliaciones[key] || null,
+                conciliado: !!(db.conciliaciones && db.conciliaciones[key]),
+                datosConciliados: db.conciliaciones ? db.conciliaciones[key] || null : null,
                 auditado: isAudited
             };
         });
