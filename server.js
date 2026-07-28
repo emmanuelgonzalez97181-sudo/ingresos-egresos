@@ -964,7 +964,7 @@ SELECT
                 };
             });
 
-            const ticketText = [
+            const ticketText = supaCorte.cadena_salida || [
                 '========================================',
                 '        AVYNA URUAPAN POS',
                 '========================================',
@@ -981,10 +981,10 @@ SELECT
                 corte: 'z',
                 numeroCorte: supaCorte.numero_corte,
                 totalVentas: parseFloat(supaCorte.total || 0),
-                totalIngresos: parseFloat(supaCorte.total || 0),
-                totalEgresos: 0,
-                totalCaja: parseFloat(supaCorte.total || 0),
-                cajero: supaCorte.caja || 'ESTACION01',
+                totalIngresos: parseFloat(supaCorte.total_ingresos || supaCorte.total || 0),
+                totalEgresos: parseFloat(supaCorte.total_egresos || 0),
+                totalCaja: parseFloat(supaCorte.total_caja || supaCorte.total || 0),
+                cajero: supaCorte.cajero || supaCorte.caja || 'ESTACION01',
                 usufecha: fechaStr,
                 usuhora: '',
                 estacion: supaCorte.caja || 'ESTACION01',
