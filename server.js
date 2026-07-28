@@ -850,44 +850,116 @@ SELECT
     (SELECT * FROM VentasWithCosts FOR JSON PATH) AS cobros_json
         `;
 
-        const sqlRes = runSqlcmdQuery(batchQuery);
-        if (!sqlRes || sqlRes.length === 0 || !sqlRes[0].corte_json) {
-            return res.status(404).json({ error: "Corte no encontrado" });
+        let sqlRes = null;
+        try {
+            sqlRes = runSqlcmdQuery(batchQuery);
+        } catch (err) {
+            console.log("sqlcmd no disponible para detalle de corte, usando Supabase...");
         }
 
-        const rawCorte = sqlRes[0].corte_json[0];
-        const corte = {
-            corte: rawCorte.corte,
-            numeroCorte: parseInt(rawCorte.numeroCorte),
-            totalVentas: parseFloat(rawCorte.totalVentas || 0),
-            totalIngresos: parseFloat(rawCorte.totalIngresos || 0),
-            totalEgresos: parseFloat(rawCorte.totalEgresos || 0),
-            totalCaja: parseFloat(rawCorte.totalCaja || 0),
-            cajero: rawCorte.cajero,
-            usufecha: rawCorte.usufecha,
-            usuhora: rawCorte.usuhora,
-            estacion: rawCorte.estacion,
-            cadenaSalida: rawCorte.cadenaSalida
-        };
+        let corte = null;
+        let flujos = [];
+        let cobros = [];
+        let vendedoresInfo = {};
 
-        const flujos = (sqlRes[0].flujos_json || []).map(f => ({
-            FLUJO: parseInt(f.FLUJO),
-            ING_EG: f.ING_EG,
-            CONCEPTO: f.CONCEPTO,
-            IMPORTE: parseFloat(f.IMPORTE || 0),
-            FECHA: f.FECHA,
-            HORA: f.HORA,
-            ESTACION: f.ESTACION,
-            USUARIO: f.USUARIO,
-            concepto2: f.concepto2,
-            id_cobdet: f.id_cobdet ? parseInt(f.id_cobdet) : null,
-            DESCRIP: f.DESCRIP ? f.DESCRIP.trim() : (f.CONCEPTO ? f.CONCEPTO.trim() : '')
-        }));
+        if (sqlRes && sqlRes.length > 0 && sqlRes[0].corte_json) {
+            const rawCorte = sqlRes[0].corte_json[0];
+            corte = {
+                corte: rawCorte.corte,
+                numeroCorte: parseInt(rawCorte.numeroCorte),
+                totalVentas: parseFloat(rawCorte.totalVentas || 0),
+                totalIngresos: parseFloat(rawCorte.totalIngresos || 0),
+                totalEgresos: parseFloat(rawCorte.totalEgresos || 0),
+                totalCaja: parseFloat(rawCorte.totalCaja || 0),
+                cajero: rawCorte.cajero,
+                usufecha: rawCorte.usufecha,
+                usuhora: rawCorte.usuhora,
+                estacion: rawCorte.estacion,
+                cadenaSalida: rawCorte.cadenaSalida
+            };
 
-        const cobros = (sqlRes[0].cobros_json || []).map(c => {
-            const importeCobrado = parseFloat(c.importe_cobrado || 0);
-            const ventaTotal = parseFloat(c.venta_total || 0);
-            const ventaCosto = parseFloat(c.venta_costo || 0);
+            flujos = (sqlRes[0].flujos_json || []).map(f => ({
+                FLUJO: parseInt(f.FLUJO),
+                ING_EG: f.ING_EG,
+                CONCEPTO: f.CONCEPTO,
+                IMPORTE: parseFloat(f.IMPORTE || 0),
+                FECHA: f.FECHA,
+                HORA: f.HORA,
+                ESTACION: f.ESTACION,
+                USUARIO: f.USUARIO,
+                concepto2: f.concepto2,
+                id_cobdet: f.id_cobdet ? parseInt(f.id_cobdet) : null,
+                DESCRIP: f.DESCRIP ? f.DESCRIP.trim() : (f.CONCEPTO ? f.CONCEPTO.trim() : '')
+            }));
+
+            cobros = (sqlRes[0].cobros_json || []).map(c => {
+                const importeCobrado = parseFloat(c.importe_cobrado || 0);
+                const ventaTotal = parseFloat(c.venta_total || 0);
+                const ventaCosto = parseFloat(c.venta_costo || 0);
+
+                return {
+                    id_cobdet: c.id_cobdet,
+                    cobranza: parseInt(c.cobranza || 0),
+                    venta: parseInt(c.venta || 0),
+                    importe_cobrado: importeCobrado,
+                    forma_pago: c.forma_pago ? c.forma_pago.trim() : 'EFE',
+                    vendedor: c.vendedor ? c.vendedor.trim() : 'SIN VENDEDOR',
+                    venta_total: ventaTotal > 0 ? ventaTotal : importeCobrado,
+                    venta_costo: ventaCosto,
+                    utilidad_venta: (ventaTotal > 0 ? ventaTotal : importeCobrado) - ventaCosto,
+                    es_abono: c.cargo_ab ? c.cargo_ab.trim() === 'A' : true,
+                    cliente_id: c.cliente_id ? c.cliente_id.trim() : 'SYS',
+                    cliente_nombre: c.cliente_nombre ? c.cliente_nombre.trim() : 'Público General',
+                    estacion: c.estacion ? c.estacion.trim() : 'CAJA GRAL',
+                    ticket: c.ticket ? parseInt(c.ticket) : (parseInt(c.venta) || 0)
+                };
+            });
+        } else {
+            // Fallback a Supabase para detalles del corte
+            const { data: supaCorte, error: supaErr } = await supabase
+                .from('corteszx')
+                .select('*')
+                .eq('numero_corte', numeroCorte)
+                .eq('tipo', 'z')
+                .maybeSingle();
+
+            if (!supaCorte) {
+                return res.status(404).json({ error: "Corte no encontrado" });
+            }
+
+            corte = {
+                corte: 'z',
+                numeroCorte: supaCorte.numero_corte,
+                totalVentas: parseFloat(supaCorte.total || 0),
+                totalIngresos: parseFloat(supaCorte.total || 0),
+                totalEgresos: 0,
+                totalCaja: parseFloat(supaCorte.total || 0),
+                cajero: supaCorte.caja || 'ESTACION01',
+                usufecha: supaCorte.fecha ? supaCorte.fecha.split('T')[0] : '',
+                usuhora: '',
+                estacion: supaCorte.caja || 'ESTACION01',
+                cadenaSalida: ''
+            };
+
+            const { data: supaFlujos } = await supabase
+                .from('flujo')
+                .select('*')
+                .eq('numerocorte', numeroCorte);
+
+            flujos = (supaFlujos || []).map(f => ({
+                FLUJO: f.flujo,
+                ING_EG: f.ing_eg,
+                CONCEPTO: f.concepto,
+                IMPORTE: parseFloat(f.importe || 0),
+                FECHA: f.fecha,
+                HORA: f.hora,
+                ESTACION: f.estacion,
+                USUARIO: f.usuario,
+                concepto2: '',
+                id_cobdet: null,
+                DESCRIP: f.concepto || ''
+            }));
+        }
 
             return {
                 id_cobdet: c.id_cobdet,
