@@ -1,0 +1,237 @@
+{
+  "cuentas": [
+    {
+      "id": "efectivo",
+      "nombre": "Caja Chica Efectivo",
+      "saldo": -400
+    },
+    {
+      "id": "banorte",
+      "nombre": "Banorte",
+      "saldo": 15548
+    },
+    {
+      "id": "bancomer",
+      "nombre": "BBVA Bancomer",
+      "saldo": 0,
+      "numeroCuenta": "",
+      "activa": false
+    },
+    {
+      "id": "efectivo_general_1783534257329",
+      "nombre": "efectivo general",
+      "saldo": 0,
+      "numeroCuenta": "",
+      "activa": true
+    },
+    {
+      "id": "caja_fuerte_1783550447321",
+      "nombre": "caja fuerte",
+      "saldo": 0,
+      "numeroCuenta": "",
+      "activa": true
+    }
+  ],
+  "conciliaciones": {
+    "161_z": {
+      "fechaConciliacion": "2026-07-08T23:06:48.172Z",
+      "distribucion": [
+        {
+          "tipoPago": "TRA",
+          "importe": 11243,
+          "cuentaId": "banorte"
+        },
+        {
+          "tipoPago": "CRE",
+          "importe": 4305,
+          "cuentaId": "banorte"
+        },
+        {
+          "vendedor": "EMMANUEL GONZALEZ",
+          "importe": 7562.5
+        }
+      ]
+    }
+  },
+  "movimientos_manuales": [
+    {
+      "id": "mov_1783019413388",
+      "concepto": "mercancia",
+      "importe": 200,
+      "tipo": "E",
+      "fecha": "2026-06-30",
+      "cuentaId": "efectivo"
+    },
+    {
+      "id": "mov_1783020297473",
+      "concepto": "dia de coco",
+      "importe": 200,
+      "tipo": "E",
+      "fecha": "2026-06-29",
+      "cuentaId": "efectivo"
+    },
+    {
+      "id": "mov_com_161_1783552217511",
+      "concepto": "Comisiones Liquidadas de Corte Z #161",
+      "importe": 2311.05,
+      "tipo": "E",
+      "cuentaId": "efectivo",
+      "fecha": "2026-07-08"
+    },
+    {
+      "id": "mov_deuda_abono_1783552264411_sq9z8",
+      "concepto": "Abono de EMMANUEL GONZALEZ a deuda (Corte Z #161)",
+      "importe": 2311.05,
+      "tipo": "I",
+      "fecha": "2026-07-08",
+      "cuentaId": "efectivo"
+    }
+  ],
+  "nominas": [],
+  "comisiones_pagadas": [
+    {
+      "id": "com_1783552217511_nnq1s",
+      "corteAsociado": 161,
+      "vendedorCobrador": "EMMANUEL",
+      "vendedorBeneficiario": "EMMANUEL",
+      "montoBaseCobrado": 23110.5,
+      "porcentajeAplicado": 10,
+      "importeComision": 2311.05,
+      "cuentaId": "efectivo",
+      "fechaPago": "2026-07-08"
+    }
+  ],
+  "socios": [
+    {
+      "id": "soc_1782769441512",
+      "nombre": "Yadira",
+      "porcentaje": 20
+    },
+    {
+      "id": "soc_1782934745531",
+      "nombre": "Emmanuel",
+      "porcentaje": 50
+    },
+    {
+      "id": "soc_1782934759478",
+      "nombre": "Dulce",
+      "porcentaje": 30
+    }
+  ],
+  "movimientos_socios": [],
+  "deudas_vendedores": [
+    {
+      "id": "deuda_1783552008173_639kj",
+      "numeroCorte": 161,
+      "vendedor": "EMMANUEL GONZALEZ",
+      "importe": 7562.5,
+      "fecha": "2026-07-08",
+      "estado": "pendiente",
+      "abonos": [
+        {
+          "id": "abono_1783552264411_sq9z8",
+          "fecha": "2026-07-08",
+          "importe": 2311.05,
+          "cuentaId": "efectivo"
+        }
+      ],
+      "saldo": 5251.45
+    }
+  ],
+  "usuarios": [
+    {
+      "username": "admin",
+      "passwordHash": "2a88ab439f55699b3bbd487828c715bd120372432182f34c0e5cccd141b825a40dcad5665ed3afa67205c5775e82b45bec4386f5dd1758a096e47cca85567c1d",
+      "rol": "admin",
+      "nombre": "EMMANUEL GONZALEZ",
+      "salt": "ca9a430dc5ca8473265b80bd432cbf76"
+    },
+    {
+      "username": "socio",
+      "passwordHash": "637e7c5f2e791200a1688142f4fe61e137d9876fb52767286dd6355587ac870e",
+      "rol": "socio",
+      "nombre": "Socio Principal"
+    },
+    {
+      "username": "gaby",
+      "passwordHash": "9e8ec63a7c1f0cc0df167057e7d32038ad9ea03a02cee4585ca9e6deec9a7c0629c27a5f170ca38c2c6ab6d1c1d263a1d92d17219213ff6ea8a5bf082f51e62d",
+      "rol": "auxiliar",
+      "nombre": "Gabriela Rodriguez",
+      "salt": "b4059695a36058f5251197c1b176c183"
+    }
+  ],
+  "bitacora": [
+    {
+      "id": "log_1783535775488_ab1pm",
+      "fecha": "2026-07-08T18:36:15.488Z",
+      "usuario": "admin",
+      "nombreUsuario": "EMMANUEL GONZALEZ",
+      "accion": "Eliminación de Movimiento",
+      "detalles": "Eliminó el movimiento manual \"Comisiones Liquidadas de Corte Z #161\" (Egreso). Importe: $2311.05"
+    },
+    {
+      "id": "log_1783550272641_pcz4s",
+      "fecha": "2026-07-08T22:37:52.641Z",
+      "usuario": "gaby",
+      "nombreUsuario": "Gabriela Rodriguez",
+      "accion": "Conciliación de Corte",
+      "detalles": "Concilió el Corte Z #161"
+    },
+    {
+      "id": "log_1783550447321_550uh",
+      "fecha": "2026-07-08T22:40:47.321Z",
+      "usuario": "admin",
+      "nombreUsuario": "EMMANUEL GONZALEZ",
+      "accion": "Creación de Cuenta",
+      "detalles": "Creó la cuenta \"caja fuerte\" con saldo inicial de $0"
+    },
+    {
+      "id": "log_1783550511663_j4l6y",
+      "fecha": "2026-07-08T22:41:51.663Z",
+      "usuario": "admin",
+      "nombreUsuario": "EMMANUEL GONZALEZ",
+      "accion": "Desconciliación de Corte",
+      "detalles": "Desconcilió el Corte Z #161"
+    },
+    {
+      "id": "log_1783551034824_15tvh",
+      "fecha": "2026-07-08T22:50:34.824Z",
+      "usuario": "gaby",
+      "nombreUsuario": "Gabriela Rodriguez",
+      "accion": "Conciliación de Corte",
+      "detalles": "Concilió el Corte Z #161"
+    },
+    {
+      "id": "log_1783551052709_sj3y9",
+      "fecha": "2026-07-08T22:50:52.709Z",
+      "usuario": "gaby",
+      "nombreUsuario": "Gabriela Rodriguez",
+      "accion": "Pago de Deuda",
+      "detalles": "Registró pago de $500.00 a deuda de EMMANUEL (Corte Z #161)"
+    },
+    {
+      "id": "log_1783551694893_3n9sl",
+      "fecha": "2026-07-08T23:01:34.893Z",
+      "usuario": "admin",
+      "nombreUsuario": "EMMANUEL GONZALEZ",
+      "accion": "Desconciliación de Corte",
+      "detalles": "Desconcilió el Corte Z #161"
+    },
+    {
+      "id": "log_1783552008173_fsr9t",
+      "fecha": "2026-07-08T23:06:48.173Z",
+      "usuario": "gaby",
+      "nombreUsuario": "Gabriela Rodriguez",
+      "accion": "Conciliación de Corte",
+      "detalles": "Concilió el Corte Z #161"
+    },
+    {
+      "id": "log_1783552264411_ga95y",
+      "fecha": "2026-07-08T23:11:04.411Z",
+      "usuario": "gaby",
+      "nombreUsuario": "Gabriela Rodriguez",
+      "accion": "Pago de Deuda",
+      "detalles": "Registró pago de $2311.05 a deuda de EMMANUEL GONZALEZ (Corte Z #161)"
+    }
+  ]
+}
