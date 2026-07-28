@@ -961,26 +961,8 @@ SELECT
             }));
         }
 
-            return {
-                id_cobdet: c.id_cobdet,
-                cobranza: parseInt(c.cobranza || 0),
-                venta: parseInt(c.venta || 0),
-                importe_cobrado: importeCobrado,
-                forma_pago: c.forma_pago ? c.forma_pago.trim() : 'EFE',
-                vendedor: c.vendedor ? c.vendedor.trim() : 'SIN VENDEDOR',
-                venta_total: ventaTotal > 0 ? ventaTotal : importeCobrado,
-                venta_costo: ventaCosto,
-                utilidad_venta: (ventaTotal > 0 ? ventaTotal : importeCobrado) - ventaCosto,
-                es_abono: c.cargo_ab ? c.cargo_ab.trim() === 'A' : true,
-                cliente_id: c.cliente_id ? c.cliente_id.trim() : 'SYS',
-                cliente_nombre: c.cliente_nombre ? c.cliente_nombre.trim() : 'Público General',
-                estacion: c.estacion ? c.estacion.trim() : 'CAJA GRAL',
-                ticket: c.ticket ? parseInt(c.ticket) : (parseInt(c.venta) || 0)
-            };
-        });
-
         // Procesar totales y utilidades por vendedor a partir de la cobranza cobrada en el corte
-        const vendedoresInfo = {};
+        vendedoresInfo = {};
         cobros.forEach(c => {
             const vend = c.vendedor ? c.vendedor.trim() : 'SIN VENDEDOR';
             if (!vendedoresInfo[vend]) {
