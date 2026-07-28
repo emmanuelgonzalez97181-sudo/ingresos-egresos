@@ -943,26 +943,56 @@ SELECT
             const clientMap = {};
             (supaClients || []).forEach(cl => clientMap[cl.cliente] = cl.nombre);
 
-            cobros = (supaVentas || []).map(v => {
-                const total = parseFloat(v.total || 0);
-                const costo = total * 0.7; // Costo estimado base si no hay desglose por partida
-                return {
-                    id_cobdet: v.venta,
-                    cobranza: v.venta,
-                    venta: v.venta,
-                    importe_cobrado: total,
-                    forma_pago: 'EFE',
-                    vendedor: v.vend || v.cajero || 'SUP',
-                    venta_total: total,
-                    venta_costo: costo,
-                    utilidad_venta: total - costo,
-                    es_abono: false,
-                    cliente_id: v.cliente || 'SYS',
-                    cliente_nombre: clientMap[v.cliente] || (v.cliente ? 'Cliente #' + v.cliente : 'Público General'),
-                    estacion: v.caja || supaCorte.caja || 'ESTACION01',
-                    ticket: v.venta
-                };
-            });
+            // Consultar cobranza detallada (cobdet) de Supabase
+            const { data: supaCobdet } = await supabase
+                .from('cobdet')
+                .select('*')
+                .gte('fecha', fechaStr + 'T00:00:00')
+                .lte('fecha', fechaStr + 'T23:59:59');
+
+            if (supaCobdet && supaCobdet.length > 0) {
+                cobros = supaCobdet.map(c => {
+                    const total = parseFloat(c.importe || 0);
+                    const costo = total * 0.7;
+                    return {
+                        id_cobdet: c.id,
+                        cobranza: c.cobranza || c.venta,
+                        venta: c.venta || c.cobranza,
+                        importe_cobrado: total,
+                        forma_pago: c.tipo_doc ? c.tipo_doc.trim() : 'EFE',
+                        vendedor: c.usuario ? c.usuario.trim() : 'SUP',
+                        venta_total: total,
+                        venta_costo: costo,
+                        utilidad_venta: total - costo,
+                        es_abono: c.cargo_ab ? c.cargo_ab.trim() === 'A' : false,
+                        cliente_id: c.cliente ? c.cliente.trim() : 'SYS',
+                        cliente_nombre: clientMap[c.cliente] || (c.cliente ? 'Cliente #' + c.cliente : 'Público General'),
+                        estacion: supaCorte.caja || 'ESTACION01',
+                        ticket: c.venta || c.cobranza
+                    };
+                });
+            } else {
+                cobros = (supaVentas || []).map(v => {
+                    const total = parseFloat(v.total || 0);
+                    const costo = total * 0.7;
+                    return {
+                        id_cobdet: v.venta,
+                        cobranza: v.venta,
+                        venta: v.venta,
+                        importe_cobrado: total,
+                        forma_pago: 'EFE',
+                        vendedor: v.vend || v.cajero || 'SUP',
+                        venta_total: total,
+                        venta_costo: costo,
+                        utilidad_venta: total - costo,
+                        es_abono: false,
+                        cliente_id: v.cliente || 'SYS',
+                        cliente_nombre: clientMap[v.cliente] || (v.cliente ? 'Cliente #' + v.cliente : 'Público General'),
+                        estacion: v.caja || supaCorte.caja || 'ESTACION01',
+                        ticket: v.venta
+                    };
+                });
+            }
 
             const ticketText = supaCorte.cadena_salida || [
                 '========================================',
