@@ -114,6 +114,52 @@ function handleLogout() {
     document.querySelector('.app-container').style.display = 'none';
 }
 
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('login-password');
+    if (passwordInput) {
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+    }
+}
+
+async function handleGoogleLogin() {
+    const errorMsg = document.getElementById('login-error');
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    try {
+        if (!window.supabase) {
+            if (errorMsg) {
+                errorMsg.innerText = "Error al cargar la librería de Supabase Auth.";
+                errorMsg.style.display = 'block';
+            }
+            return;
+        }
+
+        const supabaseUrl = 'https://gtpdqwmbwavioankpyie.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cGRxd21id2F2aW9hbmtweWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIxMTUxODQsImV4cCI6MjAzNzY5MTE4NH0.public_anon';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+
+        if (error) {
+            if (errorMsg) {
+                errorMsg.innerText = "Google Auth: " + error.message;
+                errorMsg.style.display = 'block';
+            }
+        }
+    } catch (e) {
+        console.error("Error al iniciar con Google:", e);
+        if (errorMsg) {
+            errorMsg.innerText = "Para usar Google Auth, activa el proveedor 'Google' en tu panel de Supabase.";
+            errorMsg.style.display = 'block';
+        }
+    }
+}
+
 function applyRolePermissions(rol) {
     const bitacoraBtn = document.getElementById('nav-btn-bitacora');
     const appUsersSubnavBtn = document.getElementById('subnav-btn-app-users');
