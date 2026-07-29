@@ -44,12 +44,32 @@ async function checkAuth() {
             const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cGRxd21id2F2aW9hbmtweWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIxMTUxODQsImV4cCI6MjAzNzY5MTE4NH0.public_anon';
             const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session && session.user && session.user.email) {
+            let userEmail = null;
+
+            // Verificar si hay access_token directo en la URL (#access_token=...)
+            if (window.location.hash && window.location.hash.includes('access_token=')) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                if (accessToken) {
+                    const { data: { user } } = await supabaseClient.auth.getUser(accessToken);
+                    if (user && user.email) {
+                        userEmail = user.email;
+                    }
+                }
+            }
+
+            if (!userEmail) {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session && session.user && session.user.email) {
+                    userEmail = session.user.email;
+                }
+            }
+
+            if (userEmail) {
                 const resAuth = await originalFetch('/api/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: session.user.email })
+                    body: JSON.stringify({ email: userEmail })
                 });
                 if (resAuth.ok) {
                     const dataAuth = await resAuth.json();
