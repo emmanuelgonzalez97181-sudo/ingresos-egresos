@@ -33,10 +33,48 @@ window.fetch = function(url, options = {}) {
 let currentUser = null;
 
 async function checkAuth() {
-    const token = sessionStorage.getItem('avyna_token');
+    let token = sessionStorage.getItem('avyna_token');
     const loginScreen = document.getElementById('login-screen');
     const appContainer = document.querySelector('.app-container');
     
+    // 1. Si no hay token en sessionStorage, verificar si viene de OAuth de Supabase
+    if (!token && window.supabase) {
+        try {
+            const supabaseUrl = 'https://gtpdqwmbwavioankpyie.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cGRxd21id2F2aW9hbmtweWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIxMTUxODQsImV4cCI6MjAzNzY5MTE4NH0.public_anon';
+            const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user && session.user.email) {
+                const resAuth = await originalFetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: session.user.email })
+                });
+                if (resAuth.ok) {
+                    const dataAuth = await resAuth.json();
+                    sessionStorage.setItem('avyna_token', dataAuth.token);
+                    token = dataAuth.token;
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, null, window.location.pathname);
+                    }
+                } else {
+                    const errData = await resAuth.json();
+                    const errorMsg = document.getElementById('login-error');
+                    if (errorMsg) {
+                        errorMsg.innerText = errData.error || "Acceso denegado.";
+                        errorMsg.style.display = 'block';
+                    }
+                    loginScreen.style.display = 'flex';
+                    appContainer.style.display = 'none';
+                    return false;
+                }
+            }
+        } catch (e) {
+            console.error("Error al procesar OAuth", e);
+        }
+    }
+
     if (!token) {
         loginScreen.style.display = 'flex';
         appContainer.style.display = 'none';
