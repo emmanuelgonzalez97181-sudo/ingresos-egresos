@@ -296,6 +296,43 @@ app.post('/api/login',  async (req, res) => {
     });
 });
 
+// Endpoint de verificación de Google OAuth
+app.post('/api/auth/google', async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: "El correo electrónico es requerido." });
+    }
+
+    const emailClean = email.toLowerCase().trim();
+
+    // Consultar usuarios en el sistema/Supabase
+    const db = await readLocalDbAsync();
+    let user = (db.usuarios || []).find(u => 
+        (u.email && u.email.toLowerCase() === emailClean) || 
+        (u.username.toLowerCase() === 'admin' && emailClean === 'emmanuelgonzalez97181@gmail.com') ||
+        (u.username.toLowerCase() === 'gaby' && emailClean === 'eg890960@gmail.com')
+    );
+
+    if (!user) {
+        return res.status(403).json({ error: `Acceso denegado. El correo "${emailClean}" no está en la lista de usuarios autorizados.` });
+    }
+
+    const token = generateToken();
+    const sessionData = {
+        username: user.username,
+        rol: user.rol,
+        nombre: user.nombre,
+        email: emailClean
+    };
+    SESSIONS.set(token, sessionData);
+
+    res.json({
+        success: true,
+        token,
+        user: sessionData
+    });
+});
+
 // Endpoint de datos del usuario actual
 app.get('/api/me', authenticate, async (req, res) => {
     res.json({ user: req.user });
